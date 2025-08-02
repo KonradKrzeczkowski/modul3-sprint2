@@ -29,68 +29,7 @@
     "model": "polonez",
     "price": 1500,
     "id": "311111"
-  },
-  {
-    "model": "hlr456",
-    "price": 90000000000,
-    "id": "3111111"
-  },
-  {
-    "model": "hlr456",
-    "price": 90000,
-    "id": "31111111",
-    "ownerId": "user_1",
-    "status": "sold"
-  },
-  {
-    "model": "SPONGEBOBsigma678",
-    "price": 669338,
-    "id": "311111111",
-    "ownerId": "user_1",
-    "status": "sold"
-  },
-  {
-    "model": "ford",
-    "price": 0,
-    "id": "3111111111"
-  },
-  {
-    "model": "ford",
-    "price": 1,
-    "id": "31111111111",
-    "ownerId": "user_1",
-    "status": "sold"
-  },
-  {
-    "model": "drof",
-    "price": 1234567890,
-    "id": "311111111111"
-  },
-  {
-    "model": "\\\\\\\\\\SSWWWWWWWWWWWWWWWWWW",
-    "price": 7777,
-    "id": "3111111111111",
-    "ownerId": "user_1",
-    "status": "sold"
-  },
-  {
-    "model": "\\\\\\\\\\SSWWWWWWWWWWWWWWWWWW",
-    "price": 7777,
-    "id": "31111111111111"
-  },
-  {
-    "model": "\\\\\\\\\\SSWWWWWWWWWWWWWWWWWW2222222222222222222222222222222222222222222222222222222222",
-    "price": 7.777222222222222e+137,
-    "id": "311111111111111"
-  },
-  {
-    "model": "\\\\\\\\\\SSWWWWWWWWWWWWWWWWWW2222222222222222222222222222222222222222222222222222222222",
-    "price": 7.777222222222222e+137,
-    "id": "3111111111111111"
-  },
-  {
-    "model": "2222222222222222222ER",
-    "price": 7.777222222222222e+202,
-    "id": "31111111111111111"
   }
+
+  
 ]
