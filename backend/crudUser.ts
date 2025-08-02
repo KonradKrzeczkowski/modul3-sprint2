@@ -1,9 +1,9 @@
-import { IncomingMessage, ServerResponse } from 'http';
-import { readFile, writeFile } from 'fs/promises';
-import { join } from 'path';
-import { User } from './types';
-import { getAuthUser } from './getAuthUser';
-const usersFilePath = join(__dirname, '..', 'db', 'users.json');
+import { IncomingMessage, ServerResponse } from "http";
+import { readFile, writeFile } from "fs/promises";
+import { join } from "path";
+import { User } from "./types";
+import { getAuthUser } from "./getAuthUser";
+const usersFilePath = join(__dirname, "..", "db", "users.json");
 function parseCookies(
   cookieHeader: string | undefined
 ): Record<string, string> {
@@ -15,24 +15,24 @@ function parseCookies(
   }, {} as Record<string, string>);
 }
 function getUserIdFromToken(token: string): string | null {
-  if (!token.startsWith('token-')) return null;
-  return token.slice('token-'.length);
+  if (!token.startsWith("token-")) return null;
+  return token.slice("token-".length);
 }
 async function crudUser(req: IncomingMessage, res: ServerResponse) {
-  const url = new URL(req.url || '', `http://${req.headers.host}`);
-  const id = url.pathname.split('/')[2];
+  const url = new URL(req.url || "", `http://${req.headers.host}`);
+  const id = url.pathname.split("/")[2];
 
   async function getUsers() {
-    const data = await readFile(usersFilePath, 'utf-8');
+    const data = await readFile(usersFilePath, "utf-8");
     return JSON.parse(data);
   }
 
   async function saveUsers(users: any[]) {
-    await writeFile(usersFilePath, JSON.stringify(users, null, 2), 'utf-8');
+    await writeFile(usersFilePath, JSON.stringify(users, null, 2), "utf-8");
   }
 
   // GET /users
-  if (url.pathname === '/users' && req.method === 'GET') {
+  if (url.pathname === "/users" && req.method === "GET") {
     const users = await getUsers();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(users));
@@ -40,10 +40,10 @@ async function crudUser(req: IncomingMessage, res: ServerResponse) {
   }
 
   // POST /users
-  if (url.pathname === '/users' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', async () => {
+  if (url.pathname === "/users" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", async () => {
       const newUser = JSON.parse(body);
       const users = await getUsers();
       const newId = `user_${Date.now()}`;
@@ -57,82 +57,20 @@ async function crudUser(req: IncomingMessage, res: ServerResponse) {
   }
 
   // GET /users/:id
-  if (id && url.pathname.startsWith('/users/') && req.method === 'GET') {
+  if (id && url.pathname.startsWith("/users/") && req.method === "GET") {
     const users = await getUsers();
     const user = users.find((u: User) => u.id === id);
     if (user) {
       res.end(JSON.stringify(user));
     } else {
       res.writeHead(404);
-      res.end(JSON.stringify({ message: 'User not found' }));
+      res.end(JSON.stringify({ message: "User not found" }));
     }
     return;
   }
 
   // PUT /users/:id
-if (id && url.pathname.startsWith('/users/') && req.method === 'PUT') {
-  const authUser = await getAuthUser(req);
-  if (!authUser) {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Unauthorized" }));
-    return;
-  }
-
-  const isAdmin = authUser.role === 'admin';
-  const isOwner = authUser.id === id;
-  if (!isAdmin && !isOwner) {
-    res.writeHead(403, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Brak uprawnień" }));
-    return;
-  }
-
-  let body = '';
-  req.on('data', chunk => body += chunk);
-  req.on('end', async () => {
-    try {
-      const updatedUser = JSON.parse(body);
-      const users = await getUsers();
-      const index = users.findIndex((u:User) => u.id === id);
-
-      if (index === -1) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ message: 'User not found' }));
-        return;
-      }
-
-      // Blokuj nieuprawnioną zmianę roli przez zwykłych użytkowników
-      if (!isAdmin && updatedUser.role && updatedUser.role !== users[index].role) {
-        delete updatedUser.role;
-      }
-
-      // Jeśli akcja to add_balance, dodaj 5000 do balance
-      if (updatedUser.action === "add_balance") {
-        updatedUser.balance = (users[index].balance || 0) + 5000;
-        delete updatedUser.action;  // usuń, żeby nie zapisać w userze
-      } else {
-        // jeśli nie dodajemy balansu, to balance zostaje bez zmian
-        updatedUser.balance = users[index].balance;
-      }
-
-      users[index] = {
-        ...users[index],
-        ...updatedUser,
-        id: users[index].id
-      };
-
-      await saveUsers(users);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(users[index]));
-    } catch (err) {
-      res.writeHead(400, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Invalid JSON" }));
-    }
-  });
-  return;
-}
-
-  // DELETE /users/:id
-  if (id && url.pathname.startsWith('/users/') && req.method === 'DELETE') {
+  if (id && url.pathname.startsWith("/users/") && req.method === "PUT") {
     const authUser = await getAuthUser(req);
     if (!authUser) {
       res.writeHead(401, { "Content-Type": "application/json" });
@@ -140,7 +78,70 @@ if (id && url.pathname.startsWith('/users/') && req.method === 'PUT') {
       return;
     }
 
-    const isAdmin = authUser.role === 'admin';
+    const isAdmin = authUser.role === "admin";
+    const isOwner = authUser.id === id;
+    if (!isAdmin && !isOwner) {
+      res.writeHead(403, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Brak uprawnień" }));
+      return;
+    }
+
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", async () => {
+      try {
+        const updatedUser = JSON.parse(body);
+        const users = await getUsers();
+        const index = users.findIndex((u: User) => u.id === id);
+
+        if (index === -1) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: "User not found" }));
+          return;
+        }
+
+        if (
+          !isAdmin &&
+          updatedUser.role &&
+          updatedUser.role !== users[index].role
+        ) {
+          delete updatedUser.role;
+        }
+
+        if (updatedUser.action === "add_balance") {
+          updatedUser.balance = (users[index].balance || 0) + 5000;
+          delete updatedUser.action;
+        } else {
+          updatedUser.balance = users[index].balance;
+        }
+
+        users[index] = {
+          ...users[index],
+          ...updatedUser,
+          id: users[index].id,
+        };
+
+        await saveUsers(users);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(users[index]));
+      } catch (err) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid JSON" }));
+      }
+    });
+    return;
+  }
+
+  // DELETE /users/:id
+  if (id && url.pathname.startsWith("/users/") && req.method === "DELETE") {
+    const authUser = await getAuthUser(req);
+    if (!authUser) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
+    const isAdmin = authUser.role === "admin";
     const isOwner = authUser.id === id;
     if (!isAdmin && !isOwner) {
       res.writeHead(403);
@@ -156,13 +157,12 @@ if (id && url.pathname.startsWith('/users/') && req.method === 'PUT') {
       res.end(JSON.stringify(deletedUser));
     } else {
       res.writeHead(404);
-      res.end(JSON.stringify({ message: 'User not found' }));
+      res.end(JSON.stringify({ message: "User not found" }));
     }
     return;
   }
 
-
   res.writeHead(404);
-  res.end(JSON.stringify({ message: 'Route not found' }));
+  res.end(JSON.stringify({ message: "Route not found" }));
 }
-export default crudUser
+export default crudUser;

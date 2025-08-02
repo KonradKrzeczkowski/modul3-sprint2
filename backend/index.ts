@@ -11,8 +11,6 @@ import { addClient } from "./sse";
 const PORT = 3000;
 const frontendDir = join(__dirname, "..", "frontend");
 
-console.log("TEST DZIAŁA");
-
 function parseCookies(
   cookieHeader: string | undefined
 ): Record<string, string> {
@@ -31,44 +29,36 @@ const server = createServer(async (req, res) => {
       res.end("Bad Request");
       return;
     }
-if (req.url === "/check-auth" && req.method === "GET") {
-  const cookies = parseCookies(req.headers.cookie);
-  const token = cookies.auth;
+    if (req.url === "/check-auth" && req.method === "GET") {
+      const cookies = parseCookies(req.headers.cookie);
+      const token = cookies.auth;
 
-  if (!token) {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Unauthorized" }));
-    return;
-  }
+      if (!token) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Unauthorized" }));
+        return;
+      }
 
-  if (!token.startsWith("token-")) {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Invalid token" }));
-    return;
-  }
+      if (!token.startsWith("token-")) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid token" }));
+        return;
+      }
 
-  const userId = token.slice("token-".length);
-  const users = await getUsers();
-  const user = users.find((u: User) => u.id === userId);
-
-  if (!user) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "User not found" }));
-    return;
-  }
-
-  // Usuń hasło z odpowiedzi
-  const { password, ...userWithoutPassword } = user;
-
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(userWithoutPassword));
-  return;
-}
-    if (req.url === "/users" && req.method === "GET") {
-      // Zwracamy wszystkich użytkowników z pliku user.json
+      const userId = token.slice("token-".length);
       const users = await getUsers();
+      const user = users.find((u: User) => u.id === userId);
+
+      if (!user) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "User not found" }));
+        return;
+      }
+
+      const { password, ...userWithoutPassword } = user;
+
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(users));
+      res.end(JSON.stringify(userWithoutPassword));
       return;
     }
 
@@ -90,12 +80,11 @@ if (req.url === "/check-auth" && req.method === "GET") {
       return;
     }
 
-
     if (req.url.startsWith("/users")) {
       await crudUser(req, res);
       return;
     }
-    
+
     if (req.url === "/login" || req.url === "/register") {
       await regLog(req, res);
       return;
@@ -104,29 +93,27 @@ if (req.url === "/check-auth" && req.method === "GET") {
       await crudCars(req, res);
       return;
     }
-        if (req.url.startsWith("/buy")) {
+    if (req.url.startsWith("/buy")) {
       await buyCarHandler(req, res);
- return;
+      return;
     }
-   if (req.url === "/sse") {
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    "Connection": "keep-alive",
-    "Access-Control-Allow-Origin": "*",
-  });
-  res.write(": ping\n\n"); // keep-alive
-  addClient(res, req);
-  return;
-}
-    // Endpoint GET /
+    if (req.url === "/sse") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+      });
+      res.write(": ping\n\n");
+      addClient(res, req);
+      return;
+    }
+
     if (req.url === "/" && req.method === "GET") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok" }));
       return;
     }
-
-    // Endpoint POST /login
 
     // Endpoint GET /me
     if (req.url === "/me" && req.method === "GET") {
@@ -139,7 +126,6 @@ if (req.url === "/check-auth" && req.method === "GET") {
         return;
       }
 
-      // Tu bez weryfikacji tokena - tylko sprawdzamy czy token jest poprawny i wyciągamy userId
       if (!token.startsWith("token-")) {
         res.writeHead(401, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Invalid token" }));
@@ -156,15 +142,12 @@ if (req.url === "/check-auth" && req.method === "GET") {
         res.end(JSON.stringify({ error: "User not found" }));
         return;
       }
-
-      // Usuwamy hasło przed wysłaniem
       const { password, ...userWithoutPassword } = user;
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(userWithoutPassword));
       return;
     }
 
-    // Jeśli nie znaleziono endpointu
     res.writeHead(404, { "Content-Type": "text/plain" });
     res.end("Not Found");
   } catch (error) {
