@@ -1,19 +1,23 @@
-import { createServer } from "http";
-import { readFile } from "fs/promises";
-import { join } from "path";
-import crudUser from "./crudUser";
-import crudCars from "./crudCars";
-import getUsers from "./getUsers";
-import regLog from "./regLog";
-import { User } from "./types";
-import buyCarHandler from "./buyCarHandler";
+import express, { Request, Response, NextFunction } from "express";
+import dotenv from "dotenv";
+import path from "path";
 import { addClient } from "./sse";
-const PORT = 3000;
-const frontendDir = join(__dirname, "..", "frontend");
+import getUserPg from "./getUsersPg"; 
+import crudCarsPg from "./crudCarsPg";
+import crudUsersPg from "./crudUserPg";
+import buyCarHandler from "./buyCarHandlerPg";
+import regLogHandler from "./regLogPg";
 
-function parseCookies(
-  cookieHeader: string | undefined
-): Record<string, string> {
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const frontendDir = path.join(__dirname, "..", "frontend");
+
+app.use(express.json());
+app.use("/static", express.static(frontendDir));
+
+function parseCookies(cookieHeader?: string): Record<string, string> {
   if (!cookieHeader) return {};
   return cookieHeader.split(";").reduce((acc, cookie) => {
     const [key, val] = cookie.trim().split("=");
@@ -22,140 +26,81 @@ function parseCookies(
   }, {} as Record<string, string>);
 }
 
-const server = createServer(async (req, res) => {
-  try {
-    if (!req.url) {
-      res.writeHead(400);
-      res.end("Bad Request");
-      return;
-    }
-    if (req.url === "/check-auth" && req.method === "GET") {
-      const cookies = parseCookies(req.headers.cookie);
-      const token = cookies.auth;
 
-      if (!token) {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Unauthorized" }));
-        return;
-      }
+function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  const cookies = parseCookies(req.headers.cookie);
+  const token = cookies.auth;
 
-      if (!token.startsWith("token-")) {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Invalid token" }));
-        return;
-      }
-
-      const userId = token.slice("token-".length);
-      const users = await getUsers();
-      const user = users.find((u: User) => u.id === userId);
-
-      if (!user) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "User not found" }));
-        return;
-      }
-
-      const { password, ...userWithoutPassword } = user;
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(userWithoutPassword));
-      return;
-    }
-
-    if (req.url.startsWith("/static/")) {
-      const filePath = join(frontendDir, req.url.replace("/static/", ""));
-      try {
-        const data = await readFile(filePath);
-        let contentType = "text/plain";
-        if (filePath.endsWith(".html")) contentType = "text/html";
-        else if (filePath.endsWith(".css")) contentType = "text/css";
-        else if (filePath.endsWith(".js"))
-          contentType = "application/javascript";
-        res.writeHead(200, { "Content-Type": contentType });
-        res.end(data);
-      } catch {
-        res.writeHead(404);
-        res.end("Not Found");
-      }
-      return;
-    }
-
-    if (req.url.startsWith("/users")) {
-      await crudUser(req, res);
-      return;
-    }
-
-    if (req.url === "/login" || req.url === "/register") {
-      await regLog(req, res);
-      return;
-    }
-    if (req.url.startsWith("/cars")) {
-      await crudCars(req, res);
-      return;
-    }
-    if (req.url.startsWith("/buy")) {
-      await buyCarHandler(req, res);
-      return;
-    }
-    if (req.url === "/sse") {
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-        "Access-Control-Allow-Origin": "*",
-      });
-      res.write(": ping\n\n");
-      addClient(res, req);
-      return;
-    }
-
-    if (req.url === "/" && req.method === "GET") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ status: "ok" }));
-      return;
-    }
-
-    // Endpoint GET /me
-    if (req.url === "/me" && req.method === "GET") {
-      const cookies = parseCookies(req.headers.cookie);
-      const token = cookies.auth;
-
-      if (!token) {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Unauthorized" }));
-        return;
-      }
-
-      if (!token.startsWith("token-")) {
-        res.writeHead(401, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Invalid token" }));
-        return;
-      }
-
-      const userId = token.slice("token-".length);
-
-      const users = await getUsers();
-      const user = users.find((u: User) => u.id === userId);
-
-      if (!user) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "User not found" }));
-        return;
-      }
-      const { password, ...userWithoutPassword } = user;
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(userWithoutPassword));
-      return;
-    }
-
-    res.writeHead(404, { "Content-Type": "text/plain" });
-    res.end("Not Found");
-  } catch (error) {
-    res.writeHead(500, { "Content-Type": "text/plain" });
-    res.end("Internal Server Error");
+  if (!token || !token.startsWith("token-")) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
+
+  const userId = token.slice("token-".length);
+  (req as any).userId = userId;
+  next();
+}
+
+// Endpointy
+
+app.get("/check-auth", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId;
+  const user = await getUserPg(userId);
+  if (!user) return res.status(404).json({ error: "User not found" });
+  const { password, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
 });
 
-server.listen(PORT, () => {
+app.get("/me", authMiddleware, async (req, res) => {
+  const userId = (req as any).userId;
+  const user = await getUserPg(userId);
+  if (!user) return res.status(404).json({ error: "User not found" });
+  const { password, ...userWithoutPassword } = user;
+  res.json(userWithoutPassword);
+});
+
+// CRUD Users
+app.route("/users")
+  .get(crudUsersPg)  
+  .post(crudUsersPg);
+
+app.route("/users/:id")
+  .get(crudUsersPg)    
+  .put(crudUsersPg)    
+  .delete(crudUsersPg);
+
+// CRUD Cars
+app.route("/cars")
+  .get(crudCarsPg)  
+  .post(crudCarsPg);
+
+app.route("/cars/:id")
+  .get(crudCarsPg)  
+  .put(crudCarsPg)   
+  .delete(crudCarsPg);
+
+app.post("/login", regLogHandler);
+app.post("/register", regLogHandler);
+
+app.post("/buy", buyCarHandler);
+
+app.get("/sse", (req, res) => {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "Access-Control-Allow-Origin": "*",
+  });
+  res.write(": ping\n\n");
+  addClient(res, req);
+});
+
+app.get("/", (req, res) => res.json({ status: "ok" }));
+
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+

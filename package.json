@@ -1,7 +1,10 @@
 {
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/node": "^24.0.13",
-    "@types/pg": "^8.15.5"
+    "@types/pg": "^8.15.5",
+    "cross-env": "^10.0.0",
+    "ts-node": "^10.9.2"
   },
   "name": "ts-homework-start",
   "version": "1.0.0",
@@ -9,11 +12,15 @@
   "main": "index.js",
   "dependencies": {
     "dotenv": "^17.2.1",
+    "express": "^5.1.0",
     "pg": "^8.16.3",
     "undici-types": "^7.8.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "cross-env DB=file ts-node backend/index.ts",
+    "dev:pg": "cross-env DB=pg ts-node backend/index.ts",
+    "build": "tsc",
+    "start": "cross-env DB=pg node dist/index.js"
   },
   "repository": {
     "type": "git",

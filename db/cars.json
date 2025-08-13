@@ -9,9 +9,8 @@
   {
     "model": "modeo",
     "price": 40,
-    "id": "31",
-    "ownerId": "user_1",
-    "status": "sold"
+    "id": "31"
+ 
   },
   {
     "model": "fiesta",

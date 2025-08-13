@@ -141,7 +141,7 @@ async function loadCars() {
                      <strong>ID:</strong> ${car.id} |
                      <strong>Model:</strong> ${car.model} |
                      <strong>Cena:</strong> ${car.price} |
-                     <strong>Właściciel:</strong> ${car.ownerId}
+                     <strong>Właściciel:</strong> ${car.owner_id}
                    </div>`;
         });
       }
@@ -326,7 +326,6 @@ function route() {
   const viewId = hash.substring(1) + "-view";
 
   if (hash === "#logout") {
-    // "Wylogowanie" – resetujemy currentUser; w prawdziwej aplikacji warto by było mieć endpoint logout
     currentUser = null;
     renderNav();
     showMessage("Wylogowano");
