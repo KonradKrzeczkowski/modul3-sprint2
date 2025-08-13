@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "id": "3",
+    "model": "tucson",
+    "price": 300,
+    "ownerId": "user_1",
+    "status": "sold"
+  },
+  {
+    "model": "modeo",
+    "price": 40,
+    "id": "31"
+ 
+  },
+  {
+    "model": "fiesta",
+    "price": 2,
+    "id": "311"
+  },
+  {
+    "model": "mustang",
+    "price": 322,
+    "id": "31111",
+    "ownerId": "user_1",
+    "status": "sold"
+  },
+  {
+    "model": "polonez",
+    "price": 1500,
+    "id": "311111"
+  }
+
+  
+]
